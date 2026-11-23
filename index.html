@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Bakso Mamina</title>
+<style>
+:root{--bg:#121212;--card:#1f1f1f;--text:#fff;--muted:#bdbdbd;--accent:#ff3b30;--green:#25D366;--gold:#ffd27d}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+header{padding:18px;text-align:center;background:linear-gradient(135deg,#4a0404,#8b0000)}
+header img{width:76px;height:76px;border-radius:50%;border:3px solid #fff;object-fit:cover}
+.wrap{max-width:400px;width:100%;margin:auto;padding:16px}
+.card{background:var(--card);padding:20px;border-radius:18px;border:1px solid #2d2d2d}
+h2{margin:0 0 6px;text-align:center}
+.sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:16px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+input,select{width:100%;padding:12px;border:none;border-radius:12px;background:#2a2a2a;color:#fff;margin-bottom:12px}
+.btn{width:100%;border:none;background:var(--green);color:#fff;padding:12px;border-radius:12px;cursor:pointer;font-weight:bold;font-size:15px}
+.err{color:#ff6b6b;font-size:13px;min-height:18px;margin-top:10px;text-align:center}
+.hint{color:var(--muted);font-size:12px;margin-top:12px;text-align:center;line-height:1.45}
+</style>
+</head>
+<body>
+<header>
+  <img src="WhatsApp Image 2026-02-05 at 02.14.50.jpeg" alt="Bakso Mamina">
+  <h1 style="margin:8px 0 2px">🍜 Bakso Mamina</h1>
+  <div>Login 1 Kasir &amp; 1 Admin</div>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Masuk Sistem</h2>
+    <div class="sub">Pilih akun Kasir atau Admin</div>
+    <form onsubmit="loginAkun(event)">
+      <label for="role">Peran Akun</label>
+      <select id="role">
+        <option value="kasir">Kasir (Order &amp; Struk)</option>
+        <option value="admin">Admin (Rekap &amp; Omzet)</option>
+      </select>
+
+      <label for="username">Username</label>
+      <input id="username" placeholder="Masukkan username" autocomplete="username" required>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Masukkan password" autocomplete="current-password" required>
+
+      <button class="btn" type="submit">Masuk</button>
+      <div class="err" id="errMsg"></div>
+    </form>
+    <div class="hint">
+      Default awal: Kasir (<code>kasir1</code> / <code>kasir123</code>) &bull; Admin (<code>admin1</code> / <code>admin123</code>). Ubah di dalam <code>index.html</code> sebelum dipakai jualan.
+    </div>
+  </div>
+</div>
+
+<script>
+// 1 akun Kasir & 1 akun Admin (silakan ganti password sebelum dipublikasikan)
+const AKUN_SISTEM = {
+  kasir: { username: 'kasir1', password: 'kasir123', tujuan: 'kasir.html' },
+  admin: { username: 'admin1', password: 'admin123', tujuan: 'dashboard.html' }
+};
+
+(function cekSesiAktif(){
+  const role = sessionStorage.getItem('maminaRole');
+  const user = sessionStorage.getItem('maminaUser');
+  if(role && AKUN_SISTEM[role] && user === AKUN_SISTEM[role].username){
+    window.location.replace(AKUN_SISTEM[role].tujuan);
+  }
+})();
+
+function loginAkun(e){
+  e.preventDefault();
+  const role = document.getElementById('role').value;
+  const user = document.getElementById('username').value.trim();
+  const pass = document.getElementById('password').value;
+  const errMsg = document.getElementById('errMsg');
+
+  const akun = AKUN_SISTEM[role];
+  if(akun && user === akun.username && pass === akun.password){
+    sessionStorage.setItem('maminaRole', role);
+    sessionStorage.setItem('maminaUser', user);
+    window.location.href = akun.tujuan;
+  } else {
+    errMsg.innerText = 'Peran, username, atau password salah.';
+  }
+}
+</script>
+</body>
+</html>

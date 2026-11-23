@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Admin — Bakso Mamina</title>
+<style>
+:root{--bg:#121212;--card:#1f1f1f;--text:#fff;--muted:#bdbdbd;--accent:#ff3b30;--green:#25D366;--gold:#ffd27d;--border:#333}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{padding:18px;text-align:center;background:linear-gradient(135deg,#4a0404,#8b0000)}
+.wrap{max-width:1100px;margin:auto;padding:16px}
+.nav-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.btn{border:none;background:var(--green);color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:bold;text-decoration:none;display:inline-block}
+.btn-danger{background:var(--accent)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.tab-btn{border:1px solid var(--border);background:#1b1b1b;color:var(--text);padding:9px 14px;border-radius:10px;cursor:pointer;font-weight:bold}
+.tab-btn.active{background:var(--accent);border-color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:14px 0}
+.card{background:var(--card);padding:14px;border-radius:16px;border:1px solid #2b2b2b}
+.label{color:var(--muted);font-size:13px}
+.val{font-size:22px;font-weight:bold;color:var(--gold);margin-top:6px}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th,td{padding:10px;border-bottom:1px solid #2d2d2d;text-align:left;vertical-align:top}
+th{color:var(--gold);background:#181818}
+.pesanan-cell{white-space:pre-line;line-height:1.45}
+.table-wrap{overflow-x:auto}
+.note{color:var(--muted);font-size:12px;margin-top:8px}
+.badge-rank{display:inline-block;padding:2px 8px;border-radius:999px;background:#2b2b2b;color:var(--gold);font-weight:bold;font-size:12px}
+.badge-top{background:#8b0000;color:#fff}
+</style>
+</head>
+<body>
+<header>
+  <h1>📊 Dashboard Rekap &amp; Omzet Bakso Mamina</h1>
+  <div>Akses Admin &amp; Kasir • Harian, Mingguan, Bulanan, Omzet &amp; Menu Terlaris</div>
+</header>
+
+<div class="wrap">
+  <div class="nav-bar">
+    <div>Login sebagai: <b id="labelUser">Admin</b></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn" style="background:#3a6ea5" href="kasir.html">← Kembali ke Kasir</a>
+      <button class="btn" onclick="muatData()">🔄 Refresh Rekap</button>
+      <button class="btn btn-danger" onclick="resetRekap()">🗑️ Hapus Rekap Lokal</button>
+      <button class="btn btn-danger" onclick="logoutAkun()">Logout</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-harian" onclick="setPeriode('harian')">Harian</button>
+    <button class="tab-btn" id="tab-mingguan" onclick="setPeriode('mingguan')">Mingguan (7 Hari)</button>
+    <button class="tab-btn" id="tab-bulanan" onclick="setPeriode('bulanan')">Bulanan</button>
+    <button class="tab-btn" id="tab-semua" onclick="setPeriode('semua')">Semua Data</button>
+  </div>
+
+  <div class="stats">
+    <div class="card">
+      <div class="label">Omzet Periode Terpilih</div>
+      <div class="val" id="omzetPeriode">Rp0</div>
+    </div>
+    <div class="card">
+      <div class="label">Jumlah Order</div>
+      <div class="val" id="jumlahOrder">0</div>
+    </div>
+    <div class="card">
+      <div class="label">Total Porsi Terjual</div>
+      <div class="val" id="jumlahPorsi">0</div>
+    </div>
+    <div class="card">
+      <div class="label">Menu Terlaris</div>
+      <div class="val" id="juaraMenu">-</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 8px">🏆 Menu Terlaris (Semua Menu)</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:70px">Rank</th>
+            <th>Nama Menu</th>
+            <th>Total Porsi Terjual</th>
+            <th>Frekuensi Muncul di Order</th>
+          </tr>
+        </thead>
+        <tbody id="terlarisBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2 style="margin:0 0 8px">Ringkasan Rekap</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Periode</th>
+            <th>Jumlah Order</th>
+            <th>Total Porsi</th>
+            <th>Omzet</th>
+          </tr>
+        </thead>
+        <tbody id="rekapBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2 style="margin:0 0 8px">Rincian Order Otomatis</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Meja / Nama</th>
+            <th>Pesanan</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="detailBody"></tbody>
+      </table>
+    </div>
+    <div class="note" id="statusInfo"></div>
+  </div>
+</div>
+
+<script>
+const roleAktif = sessionStorage.getItem('maminaRole');
+const userAktif = sessionStorage.getItem('maminaUser');
+if((roleAktif !== 'admin' && roleAktif !== 'kasir') || !userAktif){
+  window.location.replace('index.html');
+}
+document.getElementById('labelUser').innerText = userAktif + ' (' + roleAktif.toUpperCase() + ')';
+
+function logoutAkun(){
+  sessionStorage.removeItem('maminaRole');
+  sessionStorage.removeItem('maminaUser');
+  sessionStorage.removeItem('maminaActiveOrderId');
+  window.location.replace('index.html');
+}
+
+const STORAGE_ORDERS_KEY = 'maminaOrders';
+let semuaTransaksi = [];
+let periodeAktif = 'harian';
+
+function rupiah(n){ return 'Rp' + Number(n || 0).toLocaleString('id-ID'); }
+
+function parseTanggal(item){
+  if(item.timestamp){
+    const d = new Date(item.timestamp);
+    if(!isNaN(d.getTime())) return d;
+  }
+  return null;
+}
+
+function masukPeriode(tgl, mode){
+  if(!tgl) return mode === 'semua';
+  const now = new Date();
+  const samaHari =
+    tgl.getFullYear() === now.getFullYear() &&
+    tgl.getMonth() === now.getMonth() &&
+    tgl.getDate() === now.getDate();
+
+  if(mode === 'harian') return samaHari;
+  if(mode === 'mingguan'){
+    const tujuhHariLalu = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+    return tgl >= tujuhHariLalu;
+  }
+  if(mode === 'bulanan'){
+    return tgl.getFullYear() === now.getFullYear() && tgl.getMonth() === now.getMonth();
+  }
+  return true;
+}
+
+function setPeriode(mode){
+  periodeAktif = mode;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const aktifBtn = document.getElementById('tab-' + mode);
+  if(aktifBtn) aktifBtn.classList.add('active');
+  renderDashboard();
+}
+
+// Hitung ranking menu terlaris dari seluruh baris pesanan pada transaksi terfilter
+function hitungMenuTerlaris(transaksiList){
+  const rekapMenu = {}; // { [namaMenu]: { nama, porsi, orderCount } }
+
+  transaksiList.forEach(trx => {
+    const barisList = String(trx.pesanan || '')
+      .split(/\r?\n/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    barisList.forEach(baris => {
+      // Cocokkan pola: "<Nama Menu> [opsional catatan] x<qty>"
+      const match = baris.match(/^(.*?)\s+x(\d+)$/i);
+      if(!match) return;
+
+      const bagianDepan = match[1].replace(/\s*\[[^\]]*\]\s*$/, '').trim();
+      const qty = parseInt(match[2], 10) || 0;
+      if(!bagianDepan || qty <= 0) return;
+
+      if(!rekapMenu[bagianDepan]){
+        rekapMenu[bagianDepan] = {
+          nama: bagianDepan,
+          porsi: 0,
+          orderCount: 0
+        };
+      }
+      rekapMenu[bagianDepan].porsi += qty;
+      rekapMenu[bagianDepan].orderCount += 1;
+    });
+  });
+
+  return Object.values(rekapMenu).sort((a, b) => {
+    if(b.porsi !== a.porsi) return b.porsi - a.porsi;
+    if(b.orderCount !== a.orderCount) return b.orderCount - a.orderCount;
+    return a.nama.localeCompare(b.nama, 'id');
+  });
+}
+
+function renderDashboard(){
+  const terfilter = semuaTransaksi.filter(x => masukPeriode(x.tanggalObj, periodeAktif));
+
+  const omzetPeriode = terfilter.reduce((s, x) => s + x.totalAngka, 0);
+  const jumlahOrder = terfilter.length;
+  const jumlahPorsi = terfilter.reduce((s, x) => s + x.porsi, 0);
+  const daftarTerlaris = hitungMenuTerlaris(terfilter);
+
+  document.getElementById('omzetPeriode').innerText = rupiah(omzetPeriode);
+  document.getElementById('jumlahOrder').innerText = jumlahOrder;
+  document.getElementById('jumlahPorsi').innerText = jumlahPorsi;
+  document.getElementById('juaraMenu').innerText = daftarTerlaris.length > 0
+    ? `${daftarTerlaris[0].nama} (${daftarTerlaris[0].porsi}x)`
+    : '-';
+
+  document.getElementById('terlarisBody').innerHTML = daftarTerlaris.length
+    ? daftarTerlaris.map((m, i) => `
+        <tr>
+          <td><span class="badge-rank ${i === 0 ? 'badge-top' : ''}">#${i + 1}</span></td>
+          <td><b>${m.nama}</b></td>
+          <td><b>${m.porsi} porsi</b></td>
+          <td>${m.orderCount} order</td>
+        </tr>`).join('')
+    : `<tr><td colspan="4" class="note">Belum ada penjualan menu pada periode ini.</td></tr>`;
+
+  const modes = [
+    { key: 'harian', label: 'Harian (Hari Ini)' },
+    { key: 'mingguan', label: 'Mingguan (7 Hari Terakhir)' },
+    { key: 'bulanan', label: 'Bulanan (Bulan Ini)' },
+    { key: 'semua', label: 'Semua Waktu' }
+  ];
+
+  document.getElementById('rekapBody').innerHTML = modes.map(m => {
+    const list = semuaTransaksi.filter(x => masukPeriode(x.tanggalObj, m.key));
+    const omz = list.reduce((s, x) => s + x.totalAngka, 0);
+    const pors = list.reduce((s, x) => s + x.porsi, 0);
+    return `
+      <tr>
+        <td><b>${m.label}</b></td>
+        <td>${list.length}</td>
+        <td>${pors}</td>
+        <td>${rupiah(omz)}</td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('detailBody').innerHTML = terfilter.length
+    ? terfilter.slice().reverse().map(x => `
+        <tr>
+          <td>${x.waktuTeks}</td>
+          <td>${x.meja}</td>
+          <td class="pesanan-cell">${x.pesanan}</td>
+          <td><b>${rupiah(x.totalAngka)}</b></td>
+        </tr>`).join('')
+    : `<tr><td colspan="4" class="note">Belum ada order pada periode ini.</td></tr>`;
+}
+
+function muatData(){
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
+    const arr = Array.isArray(raw) ? raw : [];
+    semuaTransaksi = arr.map(item => ({
+      waktuTeks: item.waktuTeks || '-',
+      tanggalObj: parseTanggal(item),
+      meja: item.meja || '-',
+      pesanan: item.pesanan || '-',
+      totalAngka: Number(item.totalAngka || 0),
+      porsi: Number(item.porsi || 0)
+    }));
+    document.getElementById('statusInfo').innerText =
+      'Otomatis tersinkron dari order kasir (' + semuaTransaksi.length + ' order tercatat) • ' +
+      new Date().toLocaleTimeString('id-ID');
+    renderDashboard();
+  } catch (e) {
+    document.getElementById('statusInfo').innerText = 'Gagal membaca data rekap: ' + e.message;
+  }
+}
+
+function resetRekap(){
+  if(!confirm('Hapus seluruh data rekap lokal di browser ini?')) return;
+  localStorage.removeItem(STORAGE_ORDERS_KEY);
+  sessionStorage.removeItem('maminaActiveOrderId');
+  muatData();
+}
+
+window.addEventListener('storage', e => {
+  if(e.key === STORAGE_ORDERS_KEY) muatData();
+});
+
+muatData();
+</script>
+</body>
+</html>
