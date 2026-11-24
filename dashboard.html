@@ -47,7 +47,6 @@ th{color:var(--gold);background:#181818}
     </div>
     <div>Login sebagai: <b id="labelUser">Admin</b></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn" style="background:#3a6ea5" href="kasir.html">← Kembali ke Kasir</a>
       <button class="btn" onclick="muatData()">🔄 Refresh Rekap</button>
       <button class="btn btn-danger" onclick="resetRekap()">🗑️ Hapus Rekap Lokal</button>
       <button class="btn" style="background:#3a6ea5" onclick="toggleJsonBox()">📄 Lihat JSON Lokal</button>
@@ -224,17 +223,6 @@ function setPeriode(mode){
   const aktifBtn = document.getElementById('tab-' + mode);
   if(aktifBtn) aktifBtn.classList.add('active');
   renderDashboard();
-  document.getElementById('detailBody').innerHTML = terfilter.length
-  ? terfilter.slice().reverse().map(x => `
-      <tr>
-        <td>${x.waktuTeks}</td>
-        <td>${x.meja}</td>
-        <td class="pesanan-cell">${x.pesanan}</td>
-        <td><b>${rupiah(x.totalAngka)}</b></td>
-        <td><button class="btn btn-danger" style="padding:5px 9px;font-size:11px" onclick="hapusTransaksiById('${x.id}')">Hapus</button></td>
-      </tr>`).join('')
-  : `<tr><td colspan="5" class="note">Belum ada order pada periode ini.</td></tr>`;
-  
 }
 
 // Hitung ranking menu terlaris dari seluruh baris pesanan pada transaksi terfilter
@@ -289,7 +277,18 @@ function renderDashboard(){
   document.getElementById('juaraMenu').innerText = daftarTerlaris.length > 0
     ? `${daftarTerlaris[0].nama} (${daftarTerlaris[0].porsi}x)`
     : '-';
-
+  
+document.getElementById('detailBody').innerHTML = terfilter.length
+  ? terfilter.slice().reverse().map(x => `
+      <tr>
+        <td>${x.waktuTeks}</td>
+        <td>${x.meja}</td>
+        <td class="pesanan-cell">${x.pesanan}</td>
+        <td><b>${rupiah(x.totalAngka)}</b></td>
+        <td><button class="btn btn-danger" style="padding:5px 9px;font-size:11px" onclick="hapusTransaksiById('${x.id}')">Hapus</button></td>
+      </tr>`).join('')
+  : `<tr><td colspan="5" class="note">Belum ada order pada periode ini.</td></tr>`;
+  
   document.getElementById('terlarisBody').innerHTML = daftarTerlaris.length
     ? daftarTerlaris.map((m, i) => `
         <tr>
