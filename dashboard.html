@@ -38,20 +38,22 @@ th{color:var(--gold);background:#181818}
 
 <div class="wrap">
   <div class="nav-bar">
-    <div class="card" id="jsonCard" style="display:none;margin-bottom:14px">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-    <b>Isi `localStorage` (`maminaOrders`)</b>
-    <button class="btn" style="padding:6px 10px;font-size:12px" onclick="salinJson()">📋 Salin JSON</button>
-  </div>
-  <pre id="jsonOutput" style="max-height:260px;overflow:auto;background:#141414;padding:12px;border-radius:10px;font-size:12px;color:#ffd27d;white-space:pre-wrap;word-break:break-word;margin-top:10px"></pre>
-    </div>
     <div>Login sebagai: <b id="labelUser">Admin</b></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn" style="background:#3a6ea5" href="kasir.html">← Kembali ke Kasir</a>
       <button class="btn" onclick="muatData()">🔄 Refresh Rekap</button>
-      <button class="btn btn-danger" onclick="resetRekap()">🗑️ Hapus Rekap Lokal</button>
       <button class="btn" style="background:#3a6ea5" onclick="toggleJsonBox()">📄 Lihat JSON Lokal</button>
+      <button class="btn btn-danger" onclick="resetRekap()">🗑️ Hapus Rekap Lokal</button>
       <button class="btn btn-danger" onclick="logoutAkun()">Logout</button>
     </div>
+  </div>
+
+  <div class="card" id="jsonCard" style="display:none;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <b>Isi <code>localStorage</code> (<code>maminaOrders</code>)</b>
+      <button class="btn" style="padding:6px 10px;font-size:12px" onclick="salinJson()">📋 Salin JSON</button>
+    </div>
+    <pre id="jsonOutput" style="max-height:260px;overflow:auto;background:#141414;padding:12px;border-radius:10px;font-size:12px;color:#ffd27d;white-space:pre-wrap;word-break:break-word;margin-top:10px"></pre>
   </div>
 
   <div class="tabs">
@@ -135,44 +137,6 @@ th{color:var(--gold);background:#181818}
 </div>
 
 <script>
-  function toggleJsonBox(){
-  const card = document.getElementById('jsonCard');
-  const out = document.getElementById('jsonOutput');
-  const akanBuka = card.style.display === 'none';
-  if(akanBuka){
-    const data = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
-    out.textContent = JSON.stringify(data, null, 2);
-    card.style.display = 'block';
-  } else {
-    card.style.display = 'none';
-  }
-}
-
-function salinJson(){
-  const teks = document.getElementById('jsonOutput').textContent || '[]';
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(teks).then(() => alert('JSON berhasil disalin'));
-  } else {
-    alert('Silakan blok dan salin teks JSON secara manual.');
-  }
-}
-
-function hapusTransaksiById(targetId){
-  const raw = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
-  const sisa = Array.isArray(raw) ? raw.filter(item => item.id !== targetId) : [];
-  localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(sisa));
-  if(sessionStorage.getItem('maminaActiveOrderId') === targetId){
-    sessionStorage.removeItem('maminaActiveOrderId');
-  }
-  muatData();
-}
-
-  const out = document.getElementById('jsonOutput');
-  if(out && document.getElementById('jsonCard').style.display !== 'none'){
-    out.textContent = JSON.stringify(sisa, null, 2);
-  }
-}
-  
 const roleAktif = sessionStorage.getItem('maminaRole');
 const userAktif = sessionStorage.getItem('maminaUser');
 if((roleAktif !== 'admin' && roleAktif !== 'kasir') || !userAktif){
@@ -228,9 +192,8 @@ function setPeriode(mode){
   renderDashboard();
 }
 
-// Hitung ranking menu terlaris dari seluruh baris pesanan pada transaksi terfilter
 function hitungMenuTerlaris(transaksiList){
-  const rekapMenu = {}; // { [namaMenu]: { nama, porsi, orderCount } }
+  const rekapMenu = {};
 
   transaksiList.forEach(trx => {
     const barisList = String(trx.pesanan || '')
@@ -239,7 +202,6 @@ function hitungMenuTerlaris(transaksiList){
       .filter(Boolean);
 
     barisList.forEach(baris => {
-      // Cocokkan pola: "<Nama Menu> [opsional catatan] x<qty>"
       const match = baris.match(/^(.*?)\s+x(\d+)$/i);
       if(!match) return;
 
@@ -266,6 +228,44 @@ function hitungMenuTerlaris(transaksiList){
   });
 }
 
+function hapusTransaksiById(targetId){
+  if(!targetId) return;
+  if(!confirm('Hapus transaksi ini dari rekap lokal?')) return;
+  const raw = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
+  const sisa = Array.isArray(raw) ? raw.filter(item => item.id !== targetId) : [];
+  localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(sisa));
+  if(sessionStorage.getItem('maminaActiveOrderId') === targetId){
+    sessionStorage.removeItem('maminaActiveOrderId');
+  }
+  muatData();
+  const out = document.getElementById('jsonOutput');
+  if(out && document.getElementById('jsonCard').style.display !== 'none'){
+    out.textContent = JSON.stringify(sisa, null, 2);
+  }
+}
+
+function toggleJsonBox(){
+  const card = document.getElementById('jsonCard');
+  const out = document.getElementById('jsonOutput');
+  const akanBuka = card.style.display === 'none';
+  if(akanBuka){
+    const data = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
+    out.textContent = JSON.stringify(data, null, 2);
+    card.style.display = 'block';
+  } else {
+    card.style.display = 'none';
+  }
+}
+
+function salinJson(){
+  const teks = document.getElementById('jsonOutput').textContent || '[]';
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(teks).then(() => alert('JSON berhasil disalin'));
+  } else {
+    alert('Silakan blok dan salin teks JSON secara manual.');
+  }
+}
+
 function renderDashboard(){
   const terfilter = semuaTransaksi.filter(x => masukPeriode(x.tanggalObj, periodeAktif));
 
@@ -280,18 +280,7 @@ function renderDashboard(){
   document.getElementById('juaraMenu').innerText = daftarTerlaris.length > 0
     ? `${daftarTerlaris[0].nama} (${daftarTerlaris[0].porsi}x)`
     : '-';
-  
-document.getElementById('detailBody').innerHTML = terfilter.length
-  ? terfilter.slice().reverse().map(x => `
-      <tr>
-        <td>${x.waktuTeks}</td>
-        <td>${x.meja}</td>
-        <td class="pesanan-cell">${x.pesanan}</td>
-        <td><b>${rupiah(x.totalAngka)}</b></td>
-        <td><button class="btn btn-danger" style="padding:5px 9px;font-size:11px" onclick="hapusTransaksiById('${x.id}')">Hapus</button></td>
-      </tr>`).join('')
-  : `<tr><td colspan="5" class="note">Belum ada order pada periode ini.</td></tr>`;
-  
+
   document.getElementById('terlarisBody').innerHTML = daftarTerlaris.length
     ? daftarTerlaris.map((m, i) => `
         <tr>
@@ -329,8 +318,9 @@ document.getElementById('detailBody').innerHTML = terfilter.length
           <td>${x.meja}</td>
           <td class="pesanan-cell">${x.pesanan}</td>
           <td><b>${rupiah(x.totalAngka)}</b></td>
+          <td><button class="btn btn-danger" style="padding:5px 9px;font-size:11px" onclick="hapusTransaksiById('${x.id}')">Hapus</button></td>
         </tr>`).join('')
-    : `<tr><td colspan="4" class="note">Belum ada order pada periode ini.</td></tr>`;
+    : `<tr><td colspan="5" class="note">Belum ada order pada periode ini.</td></tr>`;
 }
 
 function muatData(){
@@ -338,6 +328,7 @@ function muatData(){
     const raw = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
     const arr = Array.isArray(raw) ? raw : [];
     semuaTransaksi = arr.map(item => ({
+      id: item.id || '',
       waktuTeks: item.waktuTeks || '-',
       tanggalObj: parseTanggal(item),
       meja: item.meja || '-',
