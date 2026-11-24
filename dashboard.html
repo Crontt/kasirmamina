@@ -232,27 +232,64 @@ function hitungMenuTerlaris(transaksiList){
   const rekapMenu = {};
 
   transaksiList.forEach(trx => {
-    const barisList = String(trx.pesanan || '')
-      .split(/\r?\n/)
-      .map(s => s.trim())
-      .filter(Boolean);
+    const teksPesanan = String(trx.pesanan || '').trim();
+    if(!teksPesanan || teksPesanan === '-') return;
 
-    barisList.forEach(baris => {
-      const match = baris.match(/^(.*?)\s+x(\d+)$/i);
-      if(!match) return;
+    // Pecah berdasarkan enter dulu, lalu pisahkan setiap pola "... x<angka>"
+    const potonganKasus = teksPesanan.split(/\r?\n/);
+    const itemTerdeteksi = [];
 
-      const bagianDepan = match[1].replace(/\s*\[[^\]]*\]\s*$/, '').trim();
-      const qty = parseInt(match[2], 10) || 0;
-      if(!bagianDepan || qty <= 0) return;
+    potonganKasus.forEach(bagian => {
+      const regexItem = /(.*?)\s*x(\d+)(?=\s+(?:[A-Za-z0-9(]|$)|$)/gi;
+      let m;
+      let adaCocok = false;
+      while((m = regexItem.exec(bagian)) !== null){
+        adaCocok = true;
+        itemTerdeteksi.push({
+          mentah: m[1].trim(),
+          qty: parseInt(m[2], 10) || 0
+        });
+      }
+      if(!adaCocok && bagian.trim()){
+        itemTerdeteksi.push({ mentah: bagian.trim(), qty: 1 });
+      }
+    });
 
-      if(!rekapMenu[bagianDepan]){
-        rekapMenu[bagianDepan] = {
-          nama: bagianDepan,
+    // Hitung per order agar frekuensi order tidak ganda jika menu sama muncul di 1 order
+    const porsiOrderIni = {};
+    itemTerdeteksi.forEach(item => {
+      if(!item.mentah || item.qty <= 0) return;
+
+      // Buang catatan kurung siku [Isi: ... | Toping: ...] dan tanda kurung (...) di belakang nama menu
+      const namaBersih = item.mentah
+        .replace(/\[[^\]]*\]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if(!namaBersih) return;
+      porsiOrderIni[namaBersih] = (porsiOrderIni[namaBersih] || 0) + item.qty;
+    });
+
+    Object.keys(porsiOrderIni).forEach(namaMenu => {
+      if(!rekapMenu[namaMenu]){
+        rekapMenu[namaMenu] = {
+          nama: namaMenu,
           porsi: 0,
           orderCount: 0
         };
       }
-      rekapMenu[bagianDepan].porsi += qty;
+      rekapMenu[namaMenu].porsi += porsiOrderIni[namaMenu];
+      rekapMenu[namaMenu].orderCount += 1;
+    });
+  });
+
+  return Object.values(rekapMenu).sort((a, b) => {
+    if(b.porsi !== a.porsi) return b.porsi - a.porsi;
+    if(b.orderCount !== a.orderCount) return b.orderCount - a.orderCount;
+    return a.nama.localeCompare(b.nama, 'id');
+  });
+}
+  rekapMenu[bagianDepan].porsi += qty;
       rekapMenu[bagianDepan].orderCount += 1;
     });
   });
