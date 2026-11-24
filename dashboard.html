@@ -124,6 +124,7 @@ th{color:var(--gold);background:#181818}
             <th>Meja / Nama</th>
             <th>Pesanan</th>
             <th>Total</th>
+            <th>Aksi</th>
           </tr>
         </thead>
         <tbody id="detailBody"></tbody>
@@ -164,6 +165,8 @@ function hapusTransaksiById(targetId){
     sessionStorage.removeItem('maminaActiveOrderId');
   }
   muatData();
+}
+
   const out = document.getElementById('jsonOutput');
   if(out && document.getElementById('jsonCard').style.display !== 'none'){
     out.textContent = JSON.stringify(sisa, null, 2);
