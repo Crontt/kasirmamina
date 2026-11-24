@@ -165,7 +165,7 @@ function logoutAkun(){
 }
 
 // Isi URL Web App Google Apps Script yang sama dengan kasir.html jika memakai cloud sync
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxewja13vpiKOygPa4meKwupI-kRd5qIQRPzHl-mexuwEkPt05LDMYGTZjzAAwlQZ-9qQ/exec';
+const SHEET_URL = 'TEMPEL_WEB_APP_URL_ANDA_DI_SINI';
 const STORAGE_ORDERS_KEY = 'maminaOrders';
 const BARIS_PER_HALAMAN = 10;
 
@@ -239,7 +239,7 @@ function hitungMenuTerlaris(transaksiList){
     const itemTerdeteksi = [];
 
     potonganKasus.forEach(bagian => {
-      const regexItem = /(.*?)\s*x(\d+)(?=\s+(?:[A-Za-z0-9(]|$)\vert{}$)/gi;
+      const regexItem = /(.*?)\s*x(\d+)(?=\s+(?:[A-Za-z0-9(]|$)|$)/gi;
       let m;
       let adaCocok = false;
       while((m = regexItem.exec(bagian)) !== null){
@@ -349,4 +349,108 @@ function renderDashboard(){
 
   document.getElementById('omzetPeriode').innerText = rupiah(omzetPeriode);
   document.getElementById('jumlahOrder').innerText = jumlahOrder;
-  document.getElementById('jumlahPorsi
+  document.getElementById('jumlahPorsi').innerText = jumlahPorsi;
+  document.getElementById('juaraMenu').innerText = daftarTerlaris.length > 0
+    ? `${daftarTerlaris[0].nama} (${daftarTerlaris[0].porsi}x)`
+    : '-';
+
+  document.getElementById('terlarisBody').innerHTML = daftarTerlaris.length
+    ? daftarTerlaris.map((m, i) => `
+        <tr>
+          <td><span class="badge-rank ${i === 0 ? 'badge-top' : ''}">#${i + 1}</span></td>
+          <td><b>${m.nama}</b></td>
+          <td><b>${m.porsi} porsi</b></td>
+          <td>${m.orderCount} order</td>
+        </tr>`).join('')
+    : `<tr><td colspan="4" class="note">Belum ada penjualan menu pada periode ini.</td></tr>`;
+
+  const modes = [
+    { key: 'harian', label: 'Harian (Hari Ini)' },
+    { key: 'mingguan', label: 'Mingguan (7 Hari Terakhir)' },
+    { key: 'bulanan', label: 'Bulanan (Bulan Ini)' },
+    { key: 'semua', label: 'Semua Waktu' }
+  ];
+
+  document.getElementById('rekapBody').innerHTML = modes.map(m => {
+    const list = semuaTransaksi.filter(x => masukPeriode(x.tanggalObj, m.key));
+    const omz = list.reduce((s, x) => s + x.totalAngka, 0);
+    const pors = list.reduce((s, x) => s + x.porsi, 0);
+    return `
+      <tr>
+        <td><b>${m.label}</b></td>
+        <td>${list.length}</td>
+        <td>${pors}</td>
+        <td>${rupiah(omz)}</td>
+      </tr>`;
+  }).join('');
+
+  const terurutBaru = terfilter.slice().reverse();
+  const totalHalaman = Math.max(1, Math.ceil(terurutBaru.length / BARIS_PER_HALAMAN));
+  if(halamanAktif > totalHalaman) halamanAktif = totalHalaman;
+
+  const mulaiIdx = (halamanAktif - 1) * BARIS_PER_HALAMAN;
+  const barisHalaman = terurutBaru.slice(mulaiIdx, mulaiIdx + BARIS_PER_HALAMAN);
+
+  document.getElementById('detailBody').innerHTML = barisHalaman.length
+    ? barisHalaman.map(x => `
+        <tr>
+          <td>${x.waktuTeks}</td>
+          <td>${x.meja}</td>
+          <td class="pesanan-cell">${x.pesanan}</td>
+          <td><b>${rupiah(x.totalAngka)}</b></td>
+          <td><button class="btn btn-danger" style="padding:5px 9px;font-size:11px" onclick="hapusTransaksiById('${x.id}')">Hapus</button></td>
+        </tr>`).join('')
+    : `<tr><td colspan="5" class="note">Belum ada order pada periode ini.</td></tr>`;
+
+  document.getElementById('pagerInfo').innerText =
+    `Halaman ${halamanAktif} dari ${totalHalaman} (menampilkan ${barisHalaman.length} dari ${terurutBaru.length} order)`;
+  document.getElementById('btnPrev').disabled = halamanAktif <= 1;
+  document.getElementById('btnNext').disabled = halamanAktif >= totalHalaman;
+}
+
+async function muatData(){
+  let sumberLabel = 'penyimpanan lokal browser';
+  try {
+    if(SHEET_URL && !SHEET_URL.startsWith('TEMPEL_')){
+      const res = await fetch(SHEET_URL);
+      const data = await res.json();
+      const arr = Array.isArray(data) ? data : (Array.isArray(data.orders) ? data.orders : []);
+      semuaTransaksi = arr.map(normalisasiItem);
+      localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(arr));
+      sumberLabel = 'cloud / Google Sheets (bisa diakses di berbagai perangkat)';
+    } else {
+      const raw = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
+      const arr = Array.isArray(raw) ? raw : [];
+      semuaTransaksi = arr.map(normalisasiItem);
+    }
+
+    document.getElementById('statusInfo').innerText =
+      `Sumber: ${sumberLabel} (${semuaTransaksi.length} order tercatat) • ` +
+      new Date().toLocaleTimeString('id-ID');
+    renderDashboard();
+  } catch (e) {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
+    const arr = Array.isArray(raw) ? raw : [];
+    semuaTransaksi = arr.map(normalisasiItem);
+    document.getElementById('statusInfo').innerText =
+      'Mode cadangan lokal (' + semuaTransaksi.length + ' order) • ' + e.message;
+    renderDashboard();
+  }
+}
+
+function resetRekap(){
+  if(!confirm('Hapus seluruh data rekap lokal di browser ini?')) return;
+  localStorage.removeItem(STORAGE_ORDERS_KEY);
+  sessionStorage.removeItem('maminaActiveOrderId');
+  halamanAktif = 1;
+  muatData();
+}
+
+window.addEventListener('storage', e => {
+  if(e.key === STORAGE_ORDERS_KEY) muatData();
+});
+
+muatData();
+</script>
+</body>
+</html>
