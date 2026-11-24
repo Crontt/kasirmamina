@@ -13,6 +13,8 @@ header{padding:18px;text-align:center;background:linear-gradient(135deg,#4a0404,
 .nav-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px}
 .btn{border:none;background:var(--green);color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:bold;text-decoration:none;display:inline-block}
 .btn-danger{background:var(--accent)}
+.btn-nav{background:#3a6ea5}
+.btn-nav:disabled{opacity:.4;cursor:not-allowed}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
 .tab-btn{border:1px solid var(--border);background:#1b1b1b;color:var(--text);padding:9px 14px;border-radius:10px;cursor:pointer;font-weight:bold}
 .tab-btn.active{background:var(--accent);border-color:var(--accent)}
@@ -28,6 +30,8 @@ th{color:var(--gold);background:#181818}
 .note{color:var(--muted);font-size:12px;margin-top:8px}
 .badge-rank{display:inline-block;padding:2px 8px;border-radius:999px;background:#2b2b2b;color:var(--gold);font-weight:bold;font-size:12px}
 .badge-top{background:#8b0000;color:#fff}
+.pager{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px}
+.pager-info{font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -40,9 +44,9 @@ th{color:var(--gold);background:#181818}
   <div class="nav-bar">
     <div>Login sebagai: <b id="labelUser">Admin</b></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn" style="background:#3a6ea5" href="kasir.html">← Kembali ke Kasir</a>
+      <a class="btn btn-nav" href="kasir.html">← Kembali ke Kasir</a>
       <button class="btn" onclick="muatData()">🔄 Refresh Rekap</button>
-      <button class="btn" style="background:#3a6ea5" onclick="toggleJsonBox()">📄 Lihat JSON Lokal</button>
+      <button class="btn btn-nav" onclick="toggleJsonBox()">📄 Lihat JSON</button>
       <button class="btn btn-danger" onclick="resetRekap()">🗑️ Hapus Rekap Lokal</button>
       <button class="btn btn-danger" onclick="logoutAkun()">Logout</button>
     </div>
@@ -50,7 +54,7 @@ th{color:var(--gold);background:#181818}
 
   <div class="card" id="jsonCard" style="display:none;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-      <b>Isi <code>localStorage</code> (<code>maminaOrders</code>)</b>
+      <b>Data Transaksi Aktif</b>
       <button class="btn" style="padding:6px 10px;font-size:12px" onclick="salinJson()">📋 Salin JSON</button>
     </div>
     <pre id="jsonOutput" style="max-height:260px;overflow:auto;background:#141414;padding:12px;border-radius:10px;font-size:12px;color:#ffd27d;white-space:pre-wrap;word-break:break-word;margin-top:10px"></pre>
@@ -132,6 +136,15 @@ th{color:var(--gold);background:#181818}
         <tbody id="detailBody"></tbody>
       </table>
     </div>
+
+    <div class="pager">
+      <div class="pager-info" id="pagerInfo">Halaman 1 dari 1</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-nav" id="btnPrev" onclick="gantiHalaman(-1)">← Prev</button>
+        <button class="btn" id="btnNext" onclick="gantiHalaman(1)">Next →</button>
+      </div>
+    </div>
+
     <div class="note" id="statusInfo"></div>
   </div>
 </div>
@@ -151,9 +164,14 @@ function logoutAkun(){
   window.location.replace('index.html');
 }
 
+// Isi URL Web App Google Apps Script jika ingin sinkron lintas perangkat/browser
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxewja13vpiKOygPa4meKwupI-kRd5qIQRPzHl-mexuwEkPt05LDMYGTZjzAAwlQZ-9qQ/exec';
 const STORAGE_ORDERS_KEY = 'maminaOrders';
+const BARIS_PER_HALAMAN = 10;
+
 let semuaTransaksi = [];
 let periodeAktif = 'harian';
+let halamanAktif = 1;
 
 function rupiah(n){ return 'Rp' + Number(n || 0).toLocaleString('id-ID'); }
 
@@ -163,6 +181,18 @@ function parseTanggal(item){
     if(!isNaN(d.getTime())) return d;
   }
   return null;
+}
+
+function normalisasiItem(item){
+  return {
+    id: item.id || '',
+    waktuTeks: item.waktuTeks || '-',
+    tanggalObj: parseTanggal(item),
+    meja: item.meja || '-',
+    pesanan: item.pesanan || '-',
+    totalAngka: Number(item.totalAngka || 0),
+    porsi: Number(item.porsi || 0)
+  };
 }
 
 function masukPeriode(tgl, mode){
@@ -186,9 +216,15 @@ function masukPeriode(tgl, mode){
 
 function setPeriode(mode){
   periodeAktif = mode;
+  halamanAktif = 1;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   const aktifBtn = document.getElementById('tab-' + mode);
   if(aktifBtn) aktifBtn.classList.add('active');
+  renderDashboard();
+}
+
+function gantiHalaman(delta){
+  halamanAktif = Math.max(1, halamanAktif + delta);
   renderDashboard();
 }
 
@@ -228,19 +264,33 @@ function hitungMenuTerlaris(transaksiList){
   });
 }
 
-function hapusTransaksiById(targetId){
+async function hapusTransaksiById(targetId){
   if(!targetId) return;
-  if(!confirm('Hapus transaksi ini dari rekap lokal?')) return;
+  if(!confirm('Hapus transaksi ini dari rekap?')) return;
+
   const raw = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
-  const sisa = Array.isArray(raw) ? raw.filter(item => item.id !== targetId) : [];
-  localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(sisa));
+  const sisaLokal = Array.isArray(raw) ? raw.filter(item => item.id !== targetId) : [];
+  localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(sisaLokal));
+
+  semuaTransaksi = semuaTransaksi.filter(item => item.id !== targetId);
+
   if(sessionStorage.getItem('maminaActiveOrderId') === targetId){
     sessionStorage.removeItem('maminaActiveOrderId');
   }
-  muatData();
+
+  if(SHEET_URL){
+    try {
+      await fetch(SHEET_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'delete', id: targetId })
+      });
+    } catch (e) {}
+  }
+
+  renderDashboard();
   const out = document.getElementById('jsonOutput');
   if(out && document.getElementById('jsonCard').style.display !== 'none'){
-    out.textContent = JSON.stringify(sisa, null, 2);
+    out.textContent = JSON.stringify(semuaTransaksi, null, 2);
   }
 }
 
@@ -249,8 +299,7 @@ function toggleJsonBox(){
   const out = document.getElementById('jsonOutput');
   const akanBuka = card.style.display === 'none';
   if(akanBuka){
-    const data = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
-    out.textContent = JSON.stringify(data, null, 2);
+    out.textContent = JSON.stringify(semuaTransaksi, null, 2);
     card.style.display = 'block';
   } else {
     card.style.display = 'none';
@@ -311,8 +360,16 @@ function renderDashboard(){
       </tr>`;
   }).join('');
 
-  document.getElementById('detailBody').innerHTML = terfilter.length
-    ? terfilter.slice().reverse().map(x => `
+  // Urutkan dari terbaru ke terlama lalu ambil 10 baris per halaman
+  const terurutBaru = terfilter.slice().reverse();
+  const totalHalaman = Math.max(1, Math.ceil(terurutBaru.length / BARIS_PER_HALAMAN));
+  if(halamanAktif > totalHalaman) halamanAktif = totalHalaman;
+
+  const mulaiIdx = (halamanAktif - 1) * BARIS_PER_HALAMAN;
+  const barisHalaman = terurutBaru.slice(mulaiIdx, mulaiIdx + BARIS_PER_HALAMAN);
+
+  document.getElementById('detailBody').innerHTML = barisHalaman.length
+    ? barisHalaman.map(x => `
         <tr>
           <td>${x.waktuTeks}</td>
           <td>${x.meja}</td>
@@ -321,27 +378,40 @@ function renderDashboard(){
           <td><button class="btn btn-danger" style="padding:5px 9px;font-size:11px" onclick="hapusTransaksiById('${x.id}')">Hapus</button></td>
         </tr>`).join('')
     : `<tr><td colspan="5" class="note">Belum ada order pada periode ini.</td></tr>`;
+
+  document.getElementById('pagerInfo').innerText =
+    `Halaman ${halamanAktif} dari ${totalHalaman} (menampilkan ${barisHalaman.length} dari ${terurutBaru.length} order)`;
+  document.getElementById('btnPrev').disabled = halamanAktif <= 1;
+  document.getElementById('btnNext').disabled = halamanAktif >= totalHalaman;
 }
 
-function muatData(){
+async function muatData(){
+  let sumberLabel = 'penyimpanan lokal browser';
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
-    const arr = Array.isArray(raw) ? raw : [];
-    semuaTransaksi = arr.map(item => ({
-      id: item.id || '',
-      waktuTeks: item.waktuTeks || '-',
-      tanggalObj: parseTanggal(item),
-      meja: item.meja || '-',
-      pesanan: item.pesanan || '-',
-      totalAngka: Number(item.totalAngka || 0),
-      porsi: Number(item.porsi || 0)
-    }));
+    if(SHEET_URL){
+      const res = await fetch(SHEET_URL);
+      const data = await res.json();
+      const arr = Array.isArray(data) ? data : (Array.isArray(data.orders) ? data.orders : []);
+      semuaTransaksi = arr.map(normalisasiItem);
+      localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(arr));
+      sumberLabel = 'cloud / Google Sheets (bisa diakses di berbagai perangkat)';
+    } else {
+      const raw = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
+      const arr = Array.isArray(raw) ? raw : [];
+      semuaTransaksi = arr.map(normalisasiItem);
+    }
+
     document.getElementById('statusInfo').innerText =
-      'Otomatis tersinkron dari order kasir (' + semuaTransaksi.length + ' order tercatat) • ' +
+      `Sumber: ${sumberLabel} (${semuaTransaksi.length} order tercatat) • ` +
       new Date().toLocaleTimeString('id-ID');
     renderDashboard();
   } catch (e) {
-    document.getElementById('statusInfo').innerText = 'Gagal membaca data rekap: ' + e.message;
+    const raw = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || '[]');
+    const arr = Array.isArray(raw) ? raw : [];
+    semuaTransaksi = arr.map(normalisasiItem);
+    document.getElementById('statusInfo').innerText =
+      'Mode cadangan lokal (' + semuaTransaksi.length + ' order) • ' + e.message;
+    renderDashboard();
   }
 }
 
@@ -349,6 +419,7 @@ function resetRekap(){
   if(!confirm('Hapus seluruh data rekap lokal di browser ini?')) return;
   localStorage.removeItem(STORAGE_ORDERS_KEY);
   sessionStorage.removeItem('maminaActiveOrderId');
+  halamanAktif = 1;
   muatData();
 }
 
