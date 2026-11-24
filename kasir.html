@@ -18,13 +18,13 @@ header img{width:82px;height:82px;border-radius:50%;border:3px solid #fff;object
 }
 .wrap{max-width:1100px;margin:auto;padding:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
 .card{background:var(--card);padding:14px;border-radius:18px;min-width:0}.price{color:#ffd27d;font-weight:bold}.small{color:var(--muted);font-size:13px}
-.btn{border:none;background:var(--green);color:#fff;padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:bold}.btn2{background:var(--accent)}
+.btn{border:none;background:var(--green);color:#fff;padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:bold;text-decoration:none;display:inline-block}.btn2{background:var(--accent)}
 .btn-add{margin-top:8px;width:100%;padding:7px 10px;font-size:12px;border-radius:10px;background:#2b8a3e;color:#fff;border:none;cursor:pointer;font-weight:bold}
 .qty{display:flex;gap:6px;align-items:center;margin-top:10px;flex-shrink:0}.qty button{width:32px;height:32px;border:none;border-radius:10px;background:#333;color:#fff;font-size:18px;cursor:pointer}
 .qty-input{width:46px !important;padding:6px 4px !important;margin:0 !important;text-align:center;font-weight:bold;border-radius:8px !important;background:#2a2a2a;color:#fff}
 .topbar{position:sticky;top:118px;background:#000;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:9}
 .promo-track{flex:1;min-width:0;overflow:hidden;white-space:nowrap}
-.promo-text{display:inline-block;padding-right:20px;animation:jalanKananKeKiri 10s linear infinite}
+.promo-text{display:inline-block;padding-right:20px;animation:jalanKananKeKiri 8s linear infinite}
 @keyframes jalanKananKeKiri{
   0%{transform:translateX(100%)}
   100%{transform:translateX(-100%)}
@@ -35,7 +35,21 @@ input{width:100%;padding:12px;border:none;border-radius:12px;background:#2a2a2a;
 #cartPanel{position:fixed;top:0;right:-380px;width:340px;height:100%;background:#111;z-index:99;padding:18px;transition:.35s;overflow:auto;box-shadow:-8px 0 20px rgba(0,0,0,.4)}
 .opsi-box{margin-top:8px;padding-top:8px;border-top:1px solid #333;font-size:11px;min-width:0}
 .isi-list{display:flex;flex-direction:row;gap:5px;margin-top:4px}
-.toping-row{display:flex;flex-wrap:row;align-items:center;gap:6px 10px;margin-top:4px;max-width:100%}
+.toping-row{
+  display:grid;
+  grid-template-columns:repeat(1,minmax(0,1fr));
+  gap:6px 8px;
+  margin-top:4px;
+  width:100%;
+}
+.toping-row .opsi-label{
+  align-items:center;
+  gap:4px;
+  font-size:10px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 .opsi-label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin:0;line-height:1.25;max-width:100%}
 .opsi-label input{width:auto !important;margin:0 !important;padding:0 !important;flex-shrink:0}
 .cart-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #262626}
@@ -71,7 +85,7 @@ input{width:100%;padding:12px;border:none;border-radius:12px;background:#2a2a2a;
 </style>
 </head>
 <body>
-<header><img src="WhatsApp Image 2026-02-05 at 02.14.50.jpeg" alt="Bakso Mamina"><br><h1 class="brand-title">🍜 Bakso Mamina</h1><div>Cigedug Rajadesa</div></header>
+<header><img src="WhatsApp Image 2026-02-05 at 02.14.50.jpeg" alt="Bakso Mamina"><br><h1 class="brand-title">🍜 Bakso Mamina</h1><div>Mamina Style • Dark Premium</div></header>
 <div id="cartPanel"><h2>🛒 Keranjang</h2><div id="popupCart"></div><div class="checkout-total"><span>Total:</span><span>Rp<span id="popupTotal">0</span></span></div><button class="btn" style="margin-top:12px" onclick="toggleCart()">Tutup</button></div>
 <div class="topbar">
   <div class="promo-track"><span class="promo-text">🎉 Sate Marangi Hanya 15.000 / 10 Tusuk,-</span></div>
@@ -81,7 +95,10 @@ input{width:100%;padding:12px;border:none;border-radius:12px;background:#2a2a2a;
 <div class="wrap">
   <div class="session-bar">
     <div>Login sebagai: <b id="labelUser">Kasir</b></div>
-    <button class="btn btn2" style="padding:7px 12px;font-size:12px" onclick="logoutAkun()">Logout</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn" style="padding:7px 12px;font-size:12px;background:#3a6ea5" href="dashboard.html">📊 Buka Dashboard</a>
+      <button class="btn btn2" style="padding:7px 12px;font-size:12px" onclick="logoutAkun()">Logout</button>
+    </div>
   </div>
 
   <input id="searchMenu" placeholder="🔍 Cari menu..." onkeyup="filterMenu()">
@@ -90,8 +107,8 @@ input{width:100%;padding:12px;border:none;border-radius:12px;background:#2a2a2a;
     <button class="btn" onclick="filterKategori('bakso')">Bakso</button>
     <button class="btn" onclick="filterKategori('mie')">Mie</button>
     <button class="btn" onclick="filterKategori('dimsum')">Dimsum</button>
-    <button class="btn" onclick="filterKategori('sate')">Sate</button>
     <button class="btn" onclick="filterKategori('minum')">Minuman</button>
+    <button class="btn" onclick="filterKategori('sate')">Sate</button>
   </div>
 
   <h2 class="section">Daftar Menu</h2>
@@ -128,6 +145,7 @@ function logoutAkun(){
   window.location.replace('index.html');
 }
 
+const SHEET_URL = 'TEMPEL_WEB_APP_URL_ANDA_DI_SINI';
 const STORAGE_ORDERS_KEY = 'maminaOrders';
 const STORAGE_ACTIVE_ID_KEY = 'maminaActiveOrderId';
 
@@ -144,8 +162,8 @@ const menu = [
   ['Mie Ayam Bakso Daging', 18000, 'mie'], ['Mie Ayam Bakso Urat Dll', 24000, 'mie'], ['Mie Ayam Bakso Jumbo', 29000, 'mie'],
   ['Dimsum Ori isi 3', 10000, 'dimsum'], ['Dimsum Ori isi 6', 20000, 'dimsum'],
   ['Dimsum Mentai isi 3', 12000, 'dimsum'], ['Dimsum Mentai isi 6', 23000, 'dimsum'],
-  ['Sate Marangi', 15000, 'sate'], ['Nasi', 5000, 'sate'],
-  ['Es Jeruk', 5000, 'minum'], ['Pop Es', 5000, 'minum'], ['Es Teh Manis', 4000, 'minum'], ['Es Nutrisari', 4000, 'minum'], ['Tea Jus', 2000, 'minum']
+  ['Es Jeruk', 5000, 'minum'], ['Pop Es', 5000, 'minum'], ['Es Teh Manis', 4000, 'minum'], ['Es Nutrisari', 4000, 'minum'], ['Tea Jus', 2000, 'minum'],
+  ['Sate Marangi', 15000, 'sate'], ['Nasi', 5000, 'sate']
 ];
 
 const menuBaksoChecklist = [
@@ -161,7 +179,7 @@ const opsiIsi = ['Bihun', 'Mie', 'Toge', 'Sawi'];
 const opsiToping = [
   { nama: 'Tetelan', harga: 7000 },
   { nama: 'Kikil', harga: 3000 },
-  { nama: 'K. Seblak', harga: 2000 },
+  { nama: 'K.Seblak', harga: 2000 },
   { nama: 'Tahu', harga: 1000 }
 ];
 
@@ -180,6 +198,24 @@ function ambilSemuaOrder(){
 
 function simpanSemuaOrder(list){
   localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(list));
+}
+
+function kirimOrderKeSheet(record){
+  if(!SHEET_URL || !record || !record.id) return;
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ action: 'upsert', order: record })
+  }).catch(() => {});
+}
+
+function hapusOrderDariSheet(orderId){
+  if(!SHEET_URL || !orderId) return;
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ action: 'delete', id: orderId })
+  }).catch(() => {});
 }
 
 function formatItemRekap(i){
@@ -202,8 +238,10 @@ function sinkronRekapOtomatis(){
 
   if(cart.length === 0){
     if(activeOrderId){
-      const filtered = orders.filter(o => o.id !== activeOrderId);
+      const idTerhapus = activeOrderId;
+      const filtered = orders.filter(o => o.id !== idTerhapus);
       simpanSemuaOrder(filtered);
+      hapusOrderDariSheet(idTerhapus);
       activeOrderId = null;
       sessionStorage.removeItem(STORAGE_ACTIVE_ID_KEY);
     }
@@ -238,6 +276,7 @@ function sinkronRekapOtomatis(){
   }
 
   simpanSemuaOrder(orders);
+  kirimOrderKeSheet(recordBaru);
 }
 
 function orderBaru(){
@@ -506,7 +545,7 @@ function buatStruk(autoScroll = true){
     <div class="struk-paper">
       <div class="struk-header">
         <div style="font-size:16px;font-weight:bold;">🍜 BAKSO MAMINA</div>
-        <div style="font-size:12px;">Struk Resmi Bakso Mamina</div>
+        <div style="font-size:12px;">Mamina Style • Dark Premium</div>
         <div style="font-size:11px;margin-top:4px;">${waktu}</div>
         <div style="font-size:12px;margin-top:2px;">Meja/Nama: <b>${meja}</b></div>
       </div>
