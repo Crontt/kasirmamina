@@ -156,7 +156,7 @@ let cartAutoCloseTimer = null;
 let activeOrderId = sessionStorage.getItem(STORAGE_ACTIVE_ID_KEY) || null;
 
 const menu = [
-  ['Bakso Daging', 10000, 'bakso'], ['Bakso Urat', 15000, 'bakso'], ['Bakso Mercon', 15000, 'bakso'],
+  ['Bakso 1/2', 5000, 'bakso'],['Bakso Daging', 10000, 'bakso'], ['Bakso Urat', 15000, 'bakso'], ['Bakso Mercon', 15000, 'bakso'],
   ['Bakso Keju', 15000, 'bakso'], ['Bakso Telur', 15000, 'bakso'], ['Bakso Daging Jumbo', 20000, 'bakso'],
   ['Mie Ayam', 10000, 'mie'], ['Mie Ayam Tulang', 15000, 'mie'], ['Mie Ayam Bakso Kecil', 13000, 'mie'],
   ['Mie Ayam Bakso Daging', 18000, 'mie'], ['Mie Ayam Bakso Urat Dll', 24000, 'mie'], ['Mie Ayam Bakso Jumbo', 29000, 'mie'],
@@ -167,6 +167,7 @@ const menu = [
 ];
 
 const menuBaksoChecklist = [
+  'Bakso 1/2',
   'Bakso Daging',
   'Bakso Urat',
   'Bakso Mercon',
@@ -545,7 +546,7 @@ function buatStruk(autoScroll = true){
     <div class="struk-paper">
       <div class="struk-header">
         <div style="font-size:16px;font-weight:bold;">🍜 BAKSO MAMINA</div>
-        <div style="font-size:12px;">Mamina Style • Dark Premium</div>
+        <div style="font-size:12px;">Struk Resmi Bakso Mamina</div>
         <div style="font-size:11px;margin-top:4px;">${waktu}</div>
         <div style="font-size:12px;margin-top:2px;">Meja/Nama: <b>${meja}</b></div>
       </div>
