@@ -354,7 +354,7 @@ function masukkanVarianKeCart(namaMenu, hargaDasar, qtyOverride = null){
   jumlahSementara[namaMenu] = 0;
   render();
   animasi();
-  toggleOpen(3000);
+  toggleOpen(2000);
 }
 
 function setJumlahLangsung(namaMenu, hargaDasar, nilaiBaru){
@@ -498,7 +498,7 @@ function toggleCart(){
   p.style.right = sedangTerbuka ? '-380px' : '0px';
 }
 
-function toggleOpen(autoCloseMs = 3000){
+function toggleOpen(autoCloseMs = 2000){
   let p = document.getElementById('cartPanel');
   p.style.right = '0px';
   p.scrollTo({ top: 0, behavior: 'smooth' });
