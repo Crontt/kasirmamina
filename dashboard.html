@@ -358,18 +358,19 @@ function renderDashboard(){
   document.getElementById('juaraMenu').innerText = daftarTerlaris.length > 0
     ? `${daftarTerlaris[0].nama} (${daftarTerlaris[0].porsi}x)`
     : '-';
+  
+  const topSepuluh = daftarTerlaris.slice(0, 10);
+document.getElementById('terlarisBody').innerHTML = topSepuluh.length
+  ? topSepuluh.map((m, i) => `
+      <tr>
+        <td><span class="badge-rank ${i === 0 ? 'badge-top' : ''}">#${i + 1}</span></td>
+        <td><b>${m.nama}</b></td>
+        <td><b>${m.porsi} porsi</b></td>
+        <td>${m.orderCount} order</td>
+      </tr>`).join('')
+  : `<tr><td colspan="4" class="note">Belum ada penjualan menu pada periode ini.</td></tr>`;
 
-  document.getElementById('terlarisBody').innerHTML = daftarTerlaris.length
-    ? daftarTerlaris.map((m, i) => `
-        <tr>
-          <td><span class="badge-rank ${i === 0 ? 'badge-top' : ''}">#${i + 1}</span></td>
-          <td><b>${m.nama}</b></td>
-          <td><b>${m.porsi} porsi</b></td>
-          <td>${m.orderCount} order</td>
-        </tr>`).join('')
-    : `<tr><td colspan="4" class="note">Belum ada penjualan menu pada periode ini.</td></tr>`;
-
-  const modes = [
+    const modes = [
     { key: 'harian', label: 'Harian (Hari Ini)' },
     { key: 'mingguan', label: 'Mingguan (7 Hari Terakhir)' },
     { key: 'bulanan', label: 'Bulanan (Bulan Ini)' },
