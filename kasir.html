@@ -224,7 +224,7 @@ function formatItemRekap(i){
   if(i.isi && i.isi.length > 0) catatan.push('Isi: ' + i.isi.join(', '));
   if(i.toping && i.toping.length > 0) catatan.push('+ ' + i.toping.join(', '));
   else if(menuBaksoChecklist.includes(i.namaDasar)) catatan.push('');
-  const info = catatan.length > 0 ? ' [' + catatan.join(' | ') + ']' : '';
+  const info = catatan.length > 0 ? ' ' + catatan.join(' | ') + '' : '';
   return `${i.nama}${info} x${i.qty}`;
 }
 
@@ -453,7 +453,7 @@ function formatDetailItem(item){
   if(item.isi && item.isi.length > 0) parts.push('Isi: ' + item.isi.join(', '));
   if(item.toping && item.toping.length > 0) parts.push('+ ' + item.toping.join(', '));
   else if(menuBaksoChecklist.includes(item.namaDasar)) parts.push('');
-  return parts.length > 0 ? ' <span style="color:#ffd27d">[' + parts.join(' | ') + ']</span>' : '';
+  return parts.length > 0 ? ' <span style="color:#ffd27d">' + parts.join(' | ') + '</span>' : '';
 }
 
 function render(rebuild = true){
