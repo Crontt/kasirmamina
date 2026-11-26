@@ -96,7 +96,6 @@ input{width:100%;padding:12px;border:none;border-radius:12px;background:#2a2a2a;
   <div class="session-bar">
     <div>Login sebagai: <b id="labelUser">Kasir</b></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn" style="padding:7px 12px;font-size:12px;background:#3a6ea5" href="dashboard.html">📊 Buka Dashboard</a>
       <button class="btn btn2" style="padding:7px 12px;font-size:12px" onclick="logoutAkun()">Logout</button>
     </div>
   </div>
@@ -107,8 +106,8 @@ input{width:100%;padding:12px;border:none;border-radius:12px;background:#2a2a2a;
     <button class="btn" onclick="filterKategori('bakso')">Bakso</button>
     <button class="btn" onclick="filterKategori('mie')">Mie</button>
     <button class="btn" onclick="filterKategori('dimsum')">Dimsum</button>
-    <button class="btn" onclick="filterKategori('minum')">Minuman</button>
-    <button class="btn" onclick="filterKategori('sate')">Sate</button>
+    <button class="btn" onclick="filterKategori('minum')">Sate</button>
+    <button class="btn" onclick="filterKategori('sate')">Minuman</button>
   </div>
 
   <h2 class="section">Daftar Menu</h2>
@@ -124,7 +123,6 @@ input{width:100%;padding:12px;border:none;border-radius:12px;background:#2a2a2a;
     </div>
     <div class="checkout-actions">
       <button class="btn" onclick="selesaikanOrder()">✅ Selesai &amp; Struk</button>
-      <button class="btn btn2" onclick="checkoutWA()">💬 Kirim WA</button>
     </div>
   </div>
   <div id="strukBox" class="card"></div>
