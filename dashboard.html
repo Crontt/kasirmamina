@@ -42,14 +42,13 @@ th{color:var(--gold);background:#181818}
 <body>
 <header>
   <h1>📊 Dashboard Rekap &amp; Omzet Bakso Mamina</h1>
-  <div>Akses Admin &amp; Kasir • Harian, Mingguan, Bulanan, Omzet &amp; Menu Terlaris</div>
+  <div>Akses Admin &amp; , Omzet &amp; Menu Terlaris</div>
 </header>
 
 <div class="wrap">
   <div class="nav-bar">
     <div>Login sebagai: <b id="labelUser">Admin</b></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn btn-nav" href="kasir.html">← Kembali ke Kasir</a>
       <button class="btn" onclick="muatData()">🔄 Refresh Rekap</button>
       <button class="btn btn-nav" onclick="toggleJsonBox()">📄 Lihat JSON</button>
       <button class="btn btn-danger" onclick="resetRekap()">🗑️ Hapus Rekap Lokal</button>
@@ -67,7 +66,7 @@ th{color:var(--gold);background:#181818}
 
   <div class="tabs">
     <button class="tab-btn active" id="tab-harian" onclick="setPeriode('harian')">Harian</button>
-    <button class="tab-btn" id="tab-mingguan" onclick="setPeriode('mingguan')">Mingguan (7 Hari)</button>
+    <button class="tab-btn" id="tab-mingguan" onclick="setPeriode('mingguan')">Mingguan</button>
     <button class="tab-btn" id="tab-bulanan" onclick="setPeriode('bulanan')">Bulanan</button>
     <button class="tab-btn" id="tab-semua" onclick="setPeriode('semua')">Semua Data</button>
   </div>
@@ -92,7 +91,7 @@ th{color:var(--gold);background:#181818}
   </div>
 
   <div class="card">
-    <h2 style="margin:0 0 8px">🏆 Menu Terlaris (Semua Menu)</h2>
+    <h2 style="margin:0 0 8px">🏆 Menu Terlaris</h2>
     <div class="table-wrap">
       <table>
         <thead>
