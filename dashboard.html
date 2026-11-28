@@ -305,6 +305,33 @@ function gantiHalaman(delta){
 function hitungMenuTerlaris(transaksiList){
   const rekapMenu = {};
 
+  const daftarTopingDikenal = ['tetelan', 'kikil', 'tahu', 'k. seblak', 'k.seblak', 'kerupuk seblak'];
+
+  function tambahKeRekap(namaItem, qtyItem, orderSet){
+    const bersih = String(namaItem || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if(!bersih || qtyItem <= 0) return;
+
+    if(!rekapMenu[bersih]){
+      rekapMenu[bersih] = {
+        nama: bersih,
+        porsi: 0,
+        orderCount: 0
+      };
+    }
+    rekapMenu[bersih].porsi += qtyItem;
+    orderSet.add(bersih);
+  }
+
+  function rapikanNamaToping(rawToping){
+    const t = String(rawToping || '').replace(/\s+/g, ' ').trim();
+    if(!t) return '';
+    const lower = t.toLowerCase();
+    if(lower === 'k.seblak' || lower === 'k. seblak') return 'K. Seblak';
+    return t.replace(/\b\w/g, ch => ch.toUpperCase());
+  }
+
   transaksiList.forEach(trx => {
     const teksPesanan = String(trx.pesanan || '').trim();
     if(!teksPesanan || teksPesanan === '-') return;
@@ -328,29 +355,73 @@ function hitungMenuTerlaris(transaksiList){
       }
     });
 
-    const porsiOrderIni = {};
+    const menuTerhitungDiOrderIni = new Set();
+
     itemTerdeteksi.forEach(item => {
       if(!item.mentah || item.qty <= 0) return;
 
-      const namaBersih = item.mentah
-        .replace(/\[[^\]]*\]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+      const topingDitemukan = [];
 
-      if(!namaBersih) return;
-      porsiOrderIni[namaBersih] = (porsiOrderIni[namaBersih] || 0) + item.qty;
+      // 1. Ambil toping dari blok [Toping: ...]
+      const kurungMatches = [...item.mentah.matchAll(/\[([^\]]*)\]/g)];
+      kurungMatches.forEach(km => {
+        const isiKurung = km[1] || '';
+        const segmen = isiKurung.split('|');
+        segmen.forEach(seg => {
+          const matchToping = seg.match(/toping\s*:\s*(.+)$/i);
+          if(matchToping && !/tanpa\s*toping/i.test(matchToping[1])){
+            matchToping[1].split(',').forEach(tp => {
+              const namaTp = rapikanNamaToping(tp);
+              if(namaTp) topingDitemukan.push(namaTp);
+            });
+          }
+        });
+      });
+
+      // Hapus semua blok [...] terlebih dahulu
+      let teksTanpaKurung = item.mentah.replace(/\[[^\]]*\]/g, '').trim();
+
+      // 2. Jika ada tanda "+" di nama item (misal "Bakso Daging + Tetelan" atau "Bakso Daging + Tetelan, Tahu")
+      if(teksTanpaKurung.includes('+')){
+        const bagianPlus = teksTanpaKurung.split('+');
+        teksTanpaKurung = bagianPlus[0].trim();
+
+        for(let idx = 1; idx < bagianPlus.length; idx++){
+          bagianPlus[idx].split(',').forEach(tp => {
+            const namaTp = rapikanNamaToping(tp);
+            if(namaTp) topingDitemukan.push(namaTp);
+          });
+        }
+      }
+
+      // 3. Jika ada toping dikenal yang masih menempel di akhir teks menu utama
+      daftarTopingDikenal.forEach(tpKey => {
+        const regexAkhir = new RegExp('\\b' + tpKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+        if(regexAkhir.test(teksTanpaKurung)){
+          teksTanpaKurung = teksTanpaKurung.replace(regexAkhir, '').trim();
+          const namaTp = rapikanNamaToping(tpKey);
+          if(namaTp && !topingDitemukan.includes(namaTp)){
+            topingDitemukan.push(namaTp);
+          }
+        }
+      });
+
+      const namaMenuUtama = teksTanpaKurung.replace(/\s+/g, ' ').trim();
+      if(namaMenuUtama){
+        tambahKeRekap(namaMenuUtama, item.qty, menuTerhitungDiOrderIni);
+      }
+
+      // Catat tiap toping sebagai item terpisah
+      const topingUnik = [...new Set(topingDitemukan)];
+      topingUnik.forEach(namaToping => {
+        tambahKeRekap(namaToping, item.qty, menuTerhitungDiOrderIni);
+      });
     });
 
-    Object.keys(porsiOrderIni).forEach(namaMenu => {
-      if(!rekapMenu[namaMenu]){
-        rekapMenu[namaMenu] = {
-          nama: namaMenu,
-          porsi: 0,
-          orderCount: 0
-        };
+    menuTerhitungDiOrderIni.forEach(namaItem => {
+      if(rekapMenu[namaItem]){
+        rekapMenu[namaItem].orderCount += 1;
       }
-      rekapMenu[namaMenu].porsi += porsiOrderIni[namaMenu];
-      rekapMenu[namaMenu].orderCount += 1;
     });
   });
 
@@ -361,7 +432,8 @@ function hitungMenuTerlaris(transaksiList){
       return a.nama.localeCompare(b.nama, 'id');
     })
     .slice(0, 10);
-}
+  }
+   
 
 async function hapusTransaksiById(targetId){
   if(!targetId) return;
