@@ -302,16 +302,31 @@ function gantiHalaman(delta){
   renderDashboard();
 }
 
-function hitungMenuTerlaris(transaksiList){
+
+  function hitungMenuTerlaris(transaksiList){
   const rekapMenu = {};
 
   const daftarTopingDikenal = ['tetelan', 'kikil', 'tahu', 'k. seblak', 'k.seblak', 'kerupuk seblak'];
+  const daftarIsiDiabaikan = new Set([
+    'bihun',
+    'mie',
+    'mi',
+    'toge',
+    'tauge',
+    'sawi'
+  ]);
+
+  function adalahIsi(nama){
+    const k = String(nama || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    return daftarIsiDiabaikan.has(k);
+  }
 
   function tambahKeRekap(namaItem, qtyItem, orderSet){
     const bersih = String(namaItem || '')
       .replace(/\s+/g, ' ')
       .trim();
     if(!bersih || qtyItem <= 0) return;
+    if(adalahIsi(bersih)) return;
 
     if(!rekapMenu[bersih]){
       rekapMenu[bersih] = {
@@ -327,6 +342,7 @@ function hitungMenuTerlaris(transaksiList){
   function rapikanNamaToping(rawToping){
     const t = String(rawToping || '').replace(/\s+/g, ' ').trim();
     if(!t) return '';
+    if(adalahIsi(t)) return '';
     const lower = t.toLowerCase();
     if(lower === 'k.seblak' || lower === 'k. seblak') return 'K. Seblak';
     return t.replace(/\b\w/g, ch => ch.toUpperCase());
@@ -362,13 +378,15 @@ function hitungMenuTerlaris(transaksiList){
 
       const topingDitemukan = [];
 
-      // 1. Ambil toping dari blok [Toping: ...]
+      // 1. Ambil toping saja dari blok [...] dan abaikan segmen Isi: ...
       const kurungMatches = [...item.mentah.matchAll(/\[([^\]]*)\]/g)];
       kurungMatches.forEach(km => {
         const isiKurung = km[1] || '';
         const segmen = isiKurung.split('|');
         segmen.forEach(seg => {
-          const matchToping = seg.match(/toping\s*:\s*(.+)$/i);
+          const segTrim = seg.trim();
+          if(/^isi\s*:/i.test(segTrim)) return;
+          const matchToping = segTrim.match(/toping\s*:\s*(.+)$/i);
           if(matchToping && !/tanpa\s*toping/i.test(matchToping[1])){
             matchToping[1].split(',').forEach(tp => {
               const namaTp = rapikanNamaToping(tp);
@@ -378,10 +396,13 @@ function hitungMenuTerlaris(transaksiList){
         });
       });
 
-      // Hapus semua blok [...] terlebih dahulu
+      // Hapus seluruh blok [...] agar "Isi: Bihun, Mie, Toge" tidak ikut terbaca
       let teksTanpaKurung = item.mentah.replace(/\[[^\]]*\]/g, '').trim();
 
-      // 2. Jika ada tanda "+" di nama item (misal "Bakso Daging + Tetelan" atau "Bakso Daging + Tetelan, Tahu")
+      // Jika potongan mentah sendiri ternyata hanya berupa daftar isi/toping tanpa nama menu utama
+      if(adalahIsi(teksTanpaKurung)) return;
+
+      // 2. Pisahkan toping jika ada tanda "+"
       if(teksTanpaKurung.includes('+')){
         const bagianPlus = teksTanpaKurung.split('+');
         teksTanpaKurung = bagianPlus[0].trim();
@@ -394,7 +415,7 @@ function hitungMenuTerlaris(transaksiList){
         }
       }
 
-      // 3. Jika ada toping dikenal yang masih menempel di akhir teks menu utama
+      // 3. Ekstrak toping dikenal jika menempel, sambil menjaga isian tidak masuk
       daftarTopingDikenal.forEach(tpKey => {
         const regexAkhir = new RegExp('\\b' + tpKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
         if(regexAkhir.test(teksTanpaKurung)){
@@ -407,11 +428,10 @@ function hitungMenuTerlaris(transaksiList){
       });
 
       const namaMenuUtama = teksTanpaKurung.replace(/\s+/g, ' ').trim();
-      if(namaMenuUtama){
+      if(namaMenuUtama && !adalahIsi(namaMenuUtama)){
         tambahKeRekap(namaMenuUtama, item.qty, menuTerhitungDiOrderIni);
       }
 
-      // Catat tiap toping sebagai item terpisah
       const topingUnik = [...new Set(topingDitemukan)];
       topingUnik.forEach(namaToping => {
         tambahKeRekap(namaToping, item.qty, menuTerhitungDiOrderIni);
