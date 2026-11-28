@@ -160,8 +160,9 @@ th{color:var(--gold);background:#181818}
   </div>
 </div>
 
-<script>
-  let tanggalTerpilih = '';
+
+ <script>
+let tanggalTerpilih = '';
 
 function formatTanggalInput(d = new Date()){
   const thn = d.getFullYear();
@@ -170,50 +171,72 @@ function formatTanggalInput(d = new Date()){
   return `${thn}-${bln}-${tgl}`;
 }
 
+function parseTanggal(item){
+  if(!item) return null;
+  if(item.timestamp){
+    const d = new Date(item.timestamp);
+    if(!isNaN(d.getTime())) return d;
+  }
+  return null;
+}
+
 function masukPeriode(tgl, mode){
-  if(mode === 'tanggal'){
-    if(!tgl || !tanggalTerpilih) return false;
-    const [thn, bln, hari] = tanggalTerpilih.split('-').map(Number);
-    return (
-      tgl.getFullYear() === thn &&
-      (tgl.getMonth() + 1) === bln &&
-      tgl.getDate() === hari
-    );
-  }
+  if(mode === 'semua') return true;
+  if(!tgl || isNaN(tgl.getTime())) return false;
 
-  if(!tgl) return mode === 'semua';
   const now = new Date();
-  const samaHari =
-    tgl.getFullYear() === now.getFullYear() &&
-    tgl.getMonth() === now.getMonth() &&
-    tgl.getDate() === now.getDate();
+  const awalHariIni = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const akhirHariIni = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-  if(mode === 'harian') return samaHari;
+  if(mode === 'harian'){
+    return tgl >= awalHariIni && tgl <= akhirHariIni;
+  }
+
+  if(mode === 'tanggal'){
+    if(!tanggalTerpilih) return false;
+    const [thn, bln, hari] = tanggalTerpilih.split('-').map(Number);
+    if(!thn || !bln || !hari) return false;
+    const awalDipilih = new Date(thn, bln - 1, hari, 0, 0, 0, 0);
+    const akhirDipilih = new Date(thn, bln - 1, hari, 23, 59, 59, 999);
+    return tgl >= awalDipilih && tgl <= akhirDipilih;
+  }
+
   if(mode === 'mingguan'){
-    const tujuhHariLalu = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
-    return tgl >= tujuhHariLalu;
+    const mulaiMingguan = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
+    return tgl >= mulaiMingguan && tgl <= akhirHariIni;
   }
+
   if(mode === 'bulanan'){
-    return tgl.getFullYear() === now.getFullYear() && tgl.getMonth() === now.getMonth();
+    const awalBulan = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const akhirBulan = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return tgl >= awalBulan && tgl <= akhirBulan;
   }
-  return true;
+
+  return false;
 }
 
 function setPeriode(mode){
   periodeAktif = mode;
   halamanAktif = 1;
+
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   const aktifBtn = document.getElementById('tab-' + mode);
   if(aktifBtn) aktifBtn.classList.add('active');
 
   const boxTanggal = document.getElementById('filterTanggalBox');
   const inputTgl = document.getElementById('inputTanggal');
+
   if(boxTanggal){
     boxTanggal.style.display = (mode === 'tanggal') ? 'flex' : 'none';
   }
-  if(mode === 'tanggal' && inputTgl && !tanggalTerpilih){
-    tanggalTerpilih = formatTanggalInput(new Date());
-    inputTgl.value = tanggalTerpilih;
+
+  if(mode === 'tanggal'){
+    if(!tanggalTerpilih){
+      tanggalTerpilih = formatTanggalInput(new Date());
+    }
+    if(inputTgl){
+      inputTgl.value = tanggalTerpilih;
+    }
   }
 
   renderDashboard();
@@ -221,6 +244,8 @@ function setPeriode(mode){
 
 function ubahTanggalFilter(val){
   tanggalTerpilih = val || formatTanggalInput(new Date());
+  const inputTgl = document.getElementById('inputTanggal');
+  if(inputTgl && val) inputTgl.value = val;
   halamanAktif = 1;
   renderDashboard();
 }
@@ -241,13 +266,15 @@ if((roleAktif !== 'admin' && roleAktif !== 'kasir') || !userAktif){
 document.getElementById('labelUser').innerText = userAktif + ' (' + roleAktif.toUpperCase() + ')';
 
 function logoutAkun(){
-  sessionStorage.removeItem('maminaRole');
-  sessionStorage.removeItem('maminaUser');
-  sessionStorage.removeItem('maminaActiveOrderId');
-  window.location.replace('index.html');
+  try {
+    sessionStorage.removeItem('maminaRole');
+    sessionStorage.removeItem('maminaUser');
+    sessionStorage.removeItem('maminaActiveOrderId');
+    sessionStorage.clear();
+  } catch (e) {}
+  window.location.href = 'index.html';
 }
 
-// Isi URL Web App Google Apps Script yang sama dengan kasir.html jika memakai cloud sync
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxewja13vpiKOygPa4meKwupI-kRd5qIQRPzHl-mexuwEkPt05LDMYGTZjzAAwlQZ-9qQ/exec';
 const STORAGE_ORDERS_KEY = 'maminaOrders';
 const BARIS_PER_HALAMAN = 10;
@@ -257,14 +284,6 @@ let periodeAktif = 'harian';
 let halamanAktif = 1;
 
 function rupiah(n){ return 'Rp' + Number(n || 0).toLocaleString('id-ID'); }
-
-function parseTanggal(item){
-  if(item.timestamp){
-    const d = new Date(item.timestamp);
-    if(!isNaN(d.getTime())) return d;
-  }
-  return null;
-}
 
 function normalisasiItem(item){
   return {
@@ -276,34 +295,6 @@ function normalisasiItem(item){
     totalAngka: Number(item.totalAngka || 0),
     porsi: Number(item.porsi || 0)
   };
-}
-
-function masukPeriode(tgl, mode){
-  if(!tgl) return mode === 'semua';
-  const now = new Date();
-  const samaHari =
-    tgl.getFullYear() === now.getFullYear() &&
-    tgl.getMonth() === now.getMonth() &&
-    tgl.getDate() === now.getDate();
-
-  if(mode === 'harian') return samaHari;
-  if(mode === 'mingguan'){
-    const tujuhHariLalu = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
-    return tgl >= tujuhHariLalu;
-  }
-  if(mode === 'bulanan'){
-    return tgl.getFullYear() === now.getFullYear() && tgl.getMonth() === now.getMonth();
-  }
-  return true;
-}
-
-function setPeriode(mode){
-  periodeAktif = mode;
-  halamanAktif = 1;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  const aktifBtn = document.getElementById('tab-' + mode);
-  if(aktifBtn) aktifBtn.classList.add('active');
-  renderDashboard();
 }
 
 function gantiHalaman(delta){
@@ -363,11 +354,13 @@ function hitungMenuTerlaris(transaksiList){
     });
   });
 
-  return Object.values(rekapMenu).sort((a, b) => {
-    if(b.porsi !== a.porsi) return b.porsi - a.porsi;
-    if(b.orderCount !== a.orderCount) return b.orderCount - a.orderCount;
-    return a.nama.localeCompare(b.nama, 'id');
-  });
+  return Object.values(rekapMenu)
+    .sort((a, b) => {
+      if(b.porsi !== a.porsi) return b.porsi - a.porsi;
+      if(b.orderCount !== a.orderCount) return b.orderCount - a.orderCount;
+      return a.nama.localeCompare(b.nama, 'id');
+    })
+    .slice(0, 10);
 }
 
 async function hapusTransaksiById(targetId){
@@ -436,19 +429,18 @@ function renderDashboard(){
   document.getElementById('juaraMenu').innerText = daftarTerlaris.length > 0
     ? `${daftarTerlaris[0].nama} (${daftarTerlaris[0].porsi}x)`
     : '-';
-  
-  const topSepuluh = daftarTerlaris.slice(0, 10);
-document.getElementById('terlarisBody').innerHTML = topSepuluh.length
-  ? topSepuluh.map((m, i) => `
-      <tr>
-        <td><span class="badge-rank ${i === 0 ? 'badge-top' : ''}">#${i + 1}</span></td>
-        <td><b>${m.nama}</b></td>
-        <td><b>${m.porsi} porsi</b></td>
-        <td>${m.orderCount} order</td>
-      </tr>`).join('')
-  : `<tr><td colspan="4" class="note">Belum ada penjualan menu pada periode ini.</td></tr>`;
 
-    const modes = [
+  document.getElementById('terlarisBody').innerHTML = daftarTerlaris.length
+    ? daftarTerlaris.map((m, i) => `
+        <tr>
+          <td><span class="badge-rank ${i === 0 ? 'badge-top' : ''}">#${i + 1}</span></td>
+          <td><b>${m.nama}</b></td>
+          <td><b>${m.porsi} porsi</b></td>
+          <td>${m.orderCount} order</td>
+        </tr>`).join('')
+    : `<tr><td colspan="4" class="note">Belum ada penjualan menu pada periode ini.</td></tr>`;
+
+  const modes = [
     { key: 'harian', label: 'Harian (Hari Ini)' },
     { key: 'mingguan', label: 'Mingguan (7 Hari Terakhir)' },
     { key: 'bulanan', label: 'Bulanan (Bulan Ini)' },
@@ -535,6 +527,6 @@ window.addEventListener('storage', e => {
 });
 
 muatData();
-</script>
+ </script>
 </body>
 </html>
