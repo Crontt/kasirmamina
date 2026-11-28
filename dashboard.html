@@ -160,6 +160,78 @@ th{color:var(--gold);background:#181818}
 </div>
 
 <script>
+  let tanggalTerpilih = '';
+
+function formatTanggalInput(d = new Date()){
+  const thn = d.getFullYear();
+  const bln = String(d.getMonth() + 1).padStart(2, '0');
+  const tgl = String(d.getDate()).padStart(2, '0');
+  return `${thn}-${bln}-${tgl}`;
+}
+
+function masukPeriode(tgl, mode){
+  if(mode === 'tanggal'){
+    if(!tgl || !tanggalTerpilih) return false;
+    const [thn, bln, hari] = tanggalTerpilih.split('-').map(Number);
+    return (
+      tgl.getFullYear() === thn &&
+      (tgl.getMonth() + 1) === bln &&
+      tgl.getDate() === hari
+    );
+  }
+
+  if(!tgl) return mode === 'semua';
+  const now = new Date();
+  const samaHari =
+    tgl.getFullYear() === now.getFullYear() &&
+    tgl.getMonth() === now.getMonth() &&
+    tgl.getDate() === now.getDate();
+
+  if(mode === 'harian') return samaHari;
+  if(mode === 'mingguan'){
+    const tujuhHariLalu = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+    return tgl >= tujuhHariLalu;
+  }
+  if(mode === 'bulanan'){
+    return tgl.getFullYear() === now.getFullYear() && tgl.getMonth() === now.getMonth();
+  }
+  return true;
+}
+
+function setPeriode(mode){
+  periodeAktif = mode;
+  halamanAktif = 1;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const aktifBtn = document.getElementById('tab-' + mode);
+  if(aktifBtn) aktifBtn.classList.add('active');
+
+  const boxTanggal = document.getElementById('filterTanggalBox');
+  const inputTgl = document.getElementById('inputTanggal');
+  if(boxTanggal){
+    boxTanggal.style.display = (mode === 'tanggal') ? 'flex' : 'none';
+  }
+  if(mode === 'tanggal' && inputTgl && !tanggalTerpilih){
+    tanggalTerpilih = formatTanggalInput(new Date());
+    inputTgl.value = tanggalTerpilih;
+  }
+
+  renderDashboard();
+}
+
+function ubahTanggalFilter(val){
+  tanggalTerpilih = val || formatTanggalInput(new Date());
+  halamanAktif = 1;
+  renderDashboard();
+}
+
+function setTanggalHariIni(){
+  tanggalTerpilih = formatTanggalInput(new Date());
+  const inputTgl = document.getElementById('inputTanggal');
+  if(inputTgl) inputTgl.value = tanggalTerpilih;
+  halamanAktif = 1;
+  renderDashboard();
+}
+
 const roleAktif = sessionStorage.getItem('maminaRole');
 const userAktif = sessionStorage.getItem('maminaUser');
 if((roleAktif !== 'admin' && roleAktif !== 'kasir') || !userAktif){
