@@ -70,6 +70,12 @@ th{color:var(--gold);background:#181818}
     <button class="tab-btn" id="tab-bulanan" onclick="setPeriode('bulanan')">Bulanan</button>
     <button class="tab-btn" id="tab-semua" onclick="setPeriode('semua')">Semua Data</button>
   </div>
+  <div id="filterTanggalBox" style="display:none;margin:10px 0 14px;align-items:center;gap:10px;flex-wrap:wrap">
+  <label for="inputTanggal" class="label" style="font-size:13px">Pilih Tanggal:</label>
+  <input type="date" id="inputTanggal" onchange="ubahTanggalFilter(this.value)"
+    style="padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#1b1b1b;color:#fff;font-size:13px">
+  <button class="btn btn-nav" style="padding:8px 12px;font-size:12px" onclick="setTanggalHariIni()">Hari Ini</button>
+  </div>
 
   <div class="stats">
     <div class="card">
