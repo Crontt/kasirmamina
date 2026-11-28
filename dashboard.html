@@ -317,8 +317,16 @@ function gantiHalaman(delta){
   ]);
 
   function adalahIsi(nama){
-    const k = String(nama || '').toLowerCase().replace(/\s+/g, ' ').trim();
-    return daftarIsiDiabaikan.has(k);
+    const k = String(nama || '')
+      .toLowerCase()
+      .replace(/\bisi\s*:\s*/g, '')
+      .replace(/[|\[\]]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if(!k) return false;
+    if(daftarIsiDiabaikan.has(k)) return true;
+    const parts = k.split(',').map(p => p.trim()).filter(Boolean);
+    return parts.length > 0 && parts.every(p => daftarIsiDiabaikan.has(p));
   }
 
   function tambahKeRekap(namaItem, qtyItem, orderSet){
@@ -378,8 +386,8 @@ function gantiHalaman(delta){
 
       const topingDitemukan = [];
 
-      // 1. Ambil toping saja dari blok [...] dan abaikan segmen Isi: ...
-      const kurungMatches = [...item.mentah.matchAll(/\[([^\]]*)\]/g)];
+      // 1. Ambil toping dari blok [...] lengkap maupun terpotong
+      const kurungMatches = [...item.mentah.matchAll(/\[([^\]]*)\]?/g)];
       kurungMatches.forEach(km => {
         const isiKurung = km[1] || '';
         const segmen = isiKurung.split('|');
@@ -396,13 +404,16 @@ function gantiHalaman(delta){
         });
       });
 
-      // Hapus seluruh blok [...] agar "Isi: Bihun, Mie, Toge" tidak ikut terbaca
-      let teksTanpaKurung = item.mentah.replace(/\[[^\]]*\]/g, '').trim();
+      // 2. Buang seluruh bagian mulai dari "[" atau "Isi:" atau "|" agar tidak pernah ikut terbaca
+      let teksTanpaKurung = item.mentah
+        .replace(/\[[^\]]*\]?/g, '')
+        .replace(/\bisi\s*:.*$/i, '')
+        .replace(/\|.*$/i, '')
+        .trim();
 
-      // Jika potongan mentah sendiri ternyata hanya berupa daftar isi/toping tanpa nama menu utama
       if(adalahIsi(teksTanpaKurung)) return;
 
-      // 2. Pisahkan toping jika ada tanda "+"
+      // 3. Pisahkan toping jika ada tanda "+"
       if(teksTanpaKurung.includes('+')){
         const bagianPlus = teksTanpaKurung.split('+');
         teksTanpaKurung = bagianPlus[0].trim();
@@ -415,7 +426,7 @@ function gantiHalaman(delta){
         }
       }
 
-      // 3. Ekstrak toping dikenal jika menempel, sambil menjaga isian tidak masuk
+      // 4. Ekstrak toping dikenal jika menempel
       daftarTopingDikenal.forEach(tpKey => {
         const regexAkhir = new RegExp('\\b' + tpKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
         if(regexAkhir.test(teksTanpaKurung)){
@@ -452,7 +463,7 @@ function gantiHalaman(delta){
       return a.nama.localeCompare(b.nama, 'id');
     })
     .slice(0, 10);
-  }
+   }                    
    
 
 async function hapusTransaksiById(targetId){
